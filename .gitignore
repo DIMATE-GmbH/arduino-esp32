@@ -63,3 +63,7 @@ libraries/Insights/examples/*/*.ino.zip
 /affected_examples.txt
 /ctags_*
 .github/copilot-instructions.md
+
+# Ignore ZIP archives created
+esp32-core-*.zip
+esp32-core-*/

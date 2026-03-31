@@ -1,5 +1,5 @@
 name=ESP32 Arduino
-version=3.3.7
+version=3.3.7.1
 
 tools.esp32-arduino-libs.path={runtime.platform.path}/tools/esp32-arduino-libs
 tools.esp32-arduino-libs.path.windows={runtime.platform.path}\tools\esp32-arduino-libs
@@ -77,15 +77,6 @@ compiler.libraries.ldflags=
 
 # Target dependent definitions
 build.extra_flags.esp32=-DARDUINO_USB_CDC_ON_BOOT=0
-build.extra_flags.esp32s3=-DARDUINO_USB_MODE={build.usb_mode} -DARDUINO_USB_CDC_ON_BOOT={build.cdc_on_boot} -DARDUINO_USB_MSC_ON_BOOT={build.msc_on_boot} -DARDUINO_USB_DFU_ON_BOOT={build.dfu_on_boot}
-build.extra_flags.esp32s2=-DARDUINO_USB_MODE=0 -DARDUINO_USB_CDC_ON_BOOT={build.cdc_on_boot} -DARDUINO_USB_MSC_ON_BOOT={build.msc_on_boot} -DARDUINO_USB_DFU_ON_BOOT={build.dfu_on_boot}
-build.extra_flags.esp32c2=-DARDUINO_USB_CDC_ON_BOOT=0
-build.extra_flags.esp32c3=-DARDUINO_USB_MODE=1 -DARDUINO_USB_CDC_ON_BOOT={build.cdc_on_boot}
-build.extra_flags.esp32c6=-DARDUINO_USB_MODE=1 -DARDUINO_USB_CDC_ON_BOOT={build.cdc_on_boot}
-build.extra_flags.esp32h2=-DARDUINO_USB_MODE=1 -DARDUINO_USB_CDC_ON_BOOT={build.cdc_on_boot}
-build.extra_flags.esp32p4=-DARDUINO_USB_MODE={build.usb_mode} -DARDUINO_USB_CDC_ON_BOOT={build.cdc_on_boot} -DARDUINO_USB_MSC_ON_BOOT={build.msc_on_boot} -DARDUINO_USB_DFU_ON_BOOT={build.dfu_on_boot}
-build.extra_flags.esp32c5=-DARDUINO_USB_MODE=1 -DARDUINO_USB_CDC_ON_BOOT={build.cdc_on_boot}
-build.extra_flags.esp32c61=-DARDUINO_USB_MODE=1 -DARDUINO_USB_CDC_ON_BOOT={build.cdc_on_boot}
 
 # This can be overriden in boards.txt
 build.zigbee_mode=
@@ -256,60 +247,6 @@ debug_config.esp32.cortex-debug.custom.overrideRestartCommands.0=monitor reset h
 debug_config.esp32.cortex-debug.custom.overrideRestartCommands.1=monitor gdb_sync
 debug_config.esp32.cortex-debug.custom.overrideRestartCommands.2=thb setup
 debug_config.esp32.cortex-debug.custom.overrideRestartCommands.3=c
-
-# ESP32-S2 debug configuration
-debug_script.esp32s2=esp32s2-kaluga-1.cfg
-debug_config.esp32s2.cortex-debug.custom.name=Arduino on ESP32-S2
-debug_config.esp32s2.cortex-debug.custom.postAttachCommands.0=set remote hardware-watchpoint-limit 2
-debug_config.esp32s2.cortex-debug.custom.postAttachCommands.1=monitor reset halt
-debug_config.esp32s2.cortex-debug.custom.postAttachCommands.2=monitor gdb_sync
-debug_config.esp32s2.cortex-debug.custom.postAttachCommands.3=thb setup
-debug_config.esp32s2.cortex-debug.custom.postAttachCommands.4=c
-debug_config.esp32s2.cortex-debug.custom.overrideRestartCommands.0=monitor reset halt
-debug_config.esp32s2.cortex-debug.custom.overrideRestartCommands.1=monitor gdb_sync
-debug_config.esp32s2.cortex-debug.custom.overrideRestartCommands.2=thb setup
-debug_config.esp32s2.cortex-debug.custom.overrideRestartCommands.3=c
-
-# ESP32-S3 debug configuration
-debug_script.esp32s3=esp32s3-builtin.cfg
-debug_config.esp32s3.cortex-debug.custom.name=Arduino on ESP32-S3
-debug_config.esp32s3.cortex-debug.custom.overrideAttachCommands.0=set remote hardware-watchpoint-limit 2
-debug_config.esp32s3.cortex-debug.custom.overrideAttachCommands.1=monitor reset halt
-debug_config.esp32s3.cortex-debug.custom.overrideAttachCommands.2=monitor gdb_sync
-debug_config.esp32s3.cortex-debug.custom.overrideAttachCommands.3=thb setup
-debug_config.esp32s3.cortex-debug.custom.overrideAttachCommands.4=c
-debug_config.esp32s3.cortex-debug.custom.overrideRestartCommands.0=monitor reset halt
-debug_config.esp32s3.cortex-debug.custom.overrideRestartCommands.1=monitor gdb_sync
-
-# ESP32-C3 debug configuration
-debug_script.esp32c3=esp32c3-builtin.cfg
-debug_config.esp32c3.cortex-debug.custom.name=Arduino on ESP32-C3
-debug_config.esp32c3.cortex-debug.custom.serverArgs.0=-d3
-debug_config.esp32c3.cortex-debug.custom.overrideAttachCommands.0=set remote hardware-watchpoint-limit 8
-debug_config.esp32c3.cortex-debug.custom.overrideAttachCommands.1=monitor reset
-debug_config.esp32c3.cortex-debug.custom.overrideAttachCommands.2=monitor halt
-debug_config.esp32c3.cortex-debug.custom.overrideAttachCommands.3=monitor gdb_sync
-debug_config.esp32c3.cortex-debug.custom.overrideAttachCommands.4=thb setup
-debug_config.esp32c3.cortex-debug.custom.overrideRestartCommands.0=monitor reset
-debug_config.esp32c3.cortex-debug.custom.overrideRestartCommands.1=monitor halt
-debug_config.esp32c3.cortex-debug.custom.overrideRestartCommands.2=monitor gdb_sync
-debug_config.esp32c3.cortex-debug.custom.overrideRestartCommands.3=thb setup
-
-# ESP32-C6 debug configuration (TBD)
-debug_script.esp32c6=esp32c6-builtin.cfg
-debug_config.esp32c6=
-
-# ESP32-H2 debug configuration (TBD)
-debug_script.esp32h2=esp32h2-builtin.cfg
-debug_config.esp32h2=
-
-# ESP32-P4 debug configuration (TBD)
-debug_script.esp32p4=esp32p4-builtin.cfg
-debug_config.esp32p4=
-
-# ESP32-C5 debug configuration (TBD)
-debug_script.esp32c5=esp32c5-builtin.cfg
-debug_config.esp32c5=
 
 # Debug API variable definitions
 debug.executable={build.path}/{build.project_name}.elf
