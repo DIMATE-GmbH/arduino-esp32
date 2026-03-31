@@ -24,3 +24,5 @@ zip -r $ARCHIVE \
   platform.txt \
   programmers.txt \
   idf_component.yml
+
+sha256 $ARCHIVE
