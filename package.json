@@ -1,6 +1,6 @@
 {
   "name": "framework-arduinoespressif32-patch",
-  "version": "3.3.7.1",
+  "version": "3.3.7.2",
   "description": "Arduino Wiring-based Framework, adjusted for the Espressif ESP32 / Pico32 SoC",
   "keywords": [
     "framework",

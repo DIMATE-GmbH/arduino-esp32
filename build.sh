@@ -4,7 +4,7 @@
 # downloaded inside the official repository and that is also used by Sloeber
 # (the Eclipse-based Arduino IDE).
 
-VERSION="3.3.7.1"
+VERSION="3.3.7.2"
 ARCHIVE="esp32-core-$VERSION.zip"
 
 rm -f $ARCHIVE
