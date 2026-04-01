@@ -30,7 +30,7 @@
             {
               "packager": "esp32",
               "name": "esp32-arduino-libs",
-              "version": "idf-release_v5.5-87912cd2-v3"
+              "version": "v5.5.4-v3.3.7.2"
             },
             {
               "packager": "esp32",
@@ -68,21 +68,21 @@
       "tools": [
         {
           "name": "esp32-arduino-libs",
-          "version": "idf-release_v5.5-87912cd2-v3",
+          "version": "v5.5.4-v3.3.7.2",
           "systems": [
             {
               "host": "arm64-apple-darwin",
-              "url": "https://github.com/espressif/esp32-arduino-lib-builder/releases/download/idf-release_v5.5/esp32-arduino-libs-idf-release_v5.5-87912cd2-v3.zip",
-              "archiveFileName": "esp32-arduino-libs-idf-release_v5.5-87912cd2-v3.zip",
-              "checksum": "SHA-256:7a0084430695117009fdd7f180fe2995fcb82edf42287bfe3cac4425332e1dd4",
-              "size": "512249978"
+              "url": "https://github.com/DIMATE-GmbH/esp32-arduino-lib-builder/releases/download/v5.5.4-v3.3.7.2/esp32-libs-v5.5.4-v3.3.7.2.zip",
+              "archiveFileName": "esp32-libs-v5.5.4-v3.3.7.2.zip",
+              "checksum": "SHA-256:4a9793ae70991ce5cf8d1eda260ccf9c37e7ab9fd7d165ed3eaae548eef28d7d",
+              "size": "52795757"
             },
             {
               "host": "x86_64-apple-darwin",
-              "url": "https://github.com/espressif/esp32-arduino-lib-builder/releases/download/idf-release_v5.5/esp32-arduino-libs-idf-release_v5.5-87912cd2-v3.zip",
-              "archiveFileName": "esp32-arduino-libs-idf-release_v5.5-87912cd2-v3.zip",
-              "checksum": "SHA-256:7a0084430695117009fdd7f180fe2995fcb82edf42287bfe3cac4425332e1dd4",
-              "size": "512249978"
+              "url": "https://github.com/DIMATE-GmbH/esp32-arduino-lib-builder/releases/download/v5.5.4-v3.3.7.2/esp32-libs-v5.5.4-v3.3.7.2.zip",
+              "archiveFileName": "esp32-libs-v5.5.4-v3.3.7.2.zip",
+              "checksum": "SHA-256:4a9793ae70991ce5cf8d1eda260ccf9c37e7ab9fd7d165ed3eaae548eef28d7d",
+              "size": "52795757"
             }
           ]
         },
