@@ -91,10 +91,7 @@ set(ARDUINO_ALL_LIBRARIES
   )
 
 set(ARDUINO_LIBRARY_BluetoothSerial_SRCS
-  libraries/BluetoothSerial/src/BluetoothSerial.cpp
-  libraries/BluetoothSerial/src/BTAddress.cpp
-  libraries/BluetoothSerial/src/BTAdvertisedDeviceSet.cpp
-  libraries/BluetoothSerial/src/BTScanResultsSet.cpp)
+  libraries/BluetoothSerial/src/BluetoothSerial.cpp)
 
 set(ARDUINO_LIBRARY_FS_SRCS
   libraries/FS/src/FS.cpp
