@@ -7,7 +7,7 @@ tags:
   - arduino
 files:
   include:
-    - "variants/esp32/**/*"
+    - "variants/pico32/**/*"
   exclude:
     - ".*" # All files in the root directory that start with a dot.
     - ".gitlab/"
@@ -29,59 +29,8 @@ files:
     - "package.json"
     - "platform.txt"
     - "programmers.txt"
+    - "esp32-core-3.3.7.2/"
+    - "esp32-core-3.3.7.2/**/*"
+    - "esp32-core-3.3.7.2.zip"
 dependencies:
   idf: ">=5.3,<5.6"
-  # mdns 1.2.1 is necessary to build H2 with no WiFi
-  espressif/mdns:
-    version: "^1.2.3"
-    require: public
-  espressif/esp_modem:
-    version: "^2.0.0"
-  espressif/esp-zboss-lib:
-    version: "==1.6.4" # compatible with esp-zigbee-lib 1.6.8
-    require: public
-  espressif/esp-zigbee-lib:
-    version: "==1.6.8"
-    require: public
-  espressif/esp-dsp:
-    version: "^1.3.4"
-  # RainMaker Start (Fixed versions, because Matter supports only Insights 1.0.1)
-  espressif/network_provisioning:
-    version: "1.0.2"
-  espressif/esp_rainmaker:
-    version: "1.5.2"
-  espressif/rmaker_common:
-    version: "1.4.6"
-  espressif/esp_insights:
-    version: "1.2.2"
-    rules:
-      - if: "target not in [esp32c2, esp32p4]"
-  # New version breaks esp_insights 1.0.1
-  espressif/esp_diag_data_store:
-    version: "1.0.2"
-  espressif/esp_diagnostics:
-    version: "1.2.1"
-  espressif/cbor:
-    version: "0.6.1~4"
-  espressif/qrcode:
-    version: "0.1.0~2"
-  # RainMaker End
-  espressif/esp-sr:
-    version: "^2.1.5"
-  espressif/libsodium:
-    version: "^1.0.20~1"
-    require: public
-  espressif/esp-modbus:
-    version: "^1.0.15"
-    require: public
-  joltwallet/littlefs:
-    version: "^1.10.2"
-  chmorgan/esp-libhelix-mp3:
-    version: "1.0.3"
-    require: public
-  espressif/lan867x:
-    version: "^2.0.0"
-examples:
-  - path: ./idf_component_examples/Arduino_ESP_Matter_over_OpenThread
-  - path: ./idf_component_examples/hello_world
-  - path: ./idf_component_examples/hw_cdc_hello_world
