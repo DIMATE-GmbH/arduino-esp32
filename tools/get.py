@@ -38,9 +38,6 @@ else:
     from urllib import urlretrieve
     from urllib import urlopen
 
-if "Windows" in platform.system():
-    import requests
-
 # determine if application is a script file or frozen exe
 if getattr(sys, "frozen", False):
     current_dir = os.path.dirname(os.path.realpath(unicode(sys.executable)))
@@ -51,7 +48,7 @@ dist_dir = current_dir + "/dist/"
 
 
 def is_safe_archive_path(path):
-    # Check for absolute paths (both Unix and Windows style)
+    # Check for absolute paths
     if path.startswith("/") or (len(path) > 1 and path[1] == ":" and path[2] in "\\/"):
         raise ValueError(f"Absolute path not allowed: {path}")
 
@@ -306,10 +303,8 @@ def unpack(filename, destination, force_extract, checksum):  # noqa: C901
         print("Renaming {0} to {1} ...".format(dirname, rename_to))
         shutil.move(dirname, rename_to)
 
-    # Add execute permission to esptool on non-Windows platforms
-    if rename_to.startswith("esptool") and "CYGWIN_NT" not in sys_name and "Windows" not in sys_name:
-        st = os.stat(os.path.join(destination, rename_to, "esptool"))
-        os.chmod(os.path.join(destination, rename_to, "esptool"), st.st_mode | 0o111)
+    st = os.stat(os.path.join(destination, rename_to, "esptool"))
+    os.chmod(os.path.join(destination, rename_to, "esptool"), st.st_mode | 0o111)
 
     with open(os.path.join(destination, rename_to, ".package_checksum"), "w") as f:
         f.write(checksum)
@@ -386,28 +381,17 @@ def get_tool(tool, force_download, force_extract):
         else:
             print("Downloading '" + archive_name + "' ...")
         sys.stdout.flush()
-        if "CYGWIN_NT" in sys_name:
-            import ssl
 
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
-            urlretrieve(url, local_path, report_progress, context=ctx)
-        elif "Windows" in sys_name:
-            r = requests.get(url)
-            with open(local_path, "wb") as f:
-                f.write(r.content)
+        is_ci = os.environ.get("GITHUB_WORKSPACE")
+        if is_ci:
+            download_file(url, local_path)
         else:
-            is_ci = os.environ.get("GITHUB_WORKSPACE")
-            if is_ci:
-                download_file(url, local_path)
-            else:
-                try:
-                    urlretrieve(url, local_path, report_progress)
-                except:  # noqa: E722
-                    download_file_with_progress(url, local_path, start_time)
-                sys.stdout.write(" - Done\n")
-                sys.stdout.flush()
+            try:
+                urlretrieve(url, local_path, report_progress)
+            except:  # noqa: E722
+                download_file_with_progress(url, local_path, start_time)
+            sys.stdout.write(" - Done\n")
+            sys.stdout.flush()
     else:
         print("Tool {0} already downloaded".format(archive_name))
         sys.stdout.flush()
@@ -424,20 +408,11 @@ def load_tools_list(filename, platform):
         tools_info = json.load(f)["packages"][0]["tools"]
     tools_to_download = []
     for t in tools_info:
-        if platform == "x86_64-mingw32":
-            if "i686-mingw32" not in [p["host"] for p in t["systems"]]:
-                raise Exception("Windows x64 requires both i686-mingw32 and x86_64-mingw32 tools")
-
         tool_platform = [p for p in t["systems"] if p["host"] == platform]
         if len(tool_platform) == 0:
             # Fallback to x86 on Apple ARM
             if platform == "arm64-apple-darwin":
                 tool_platform = [p for p in t["systems"] if p["host"] == "x86_64-apple-darwin"]
-                if len(tool_platform) == 0:
-                    continue
-            # Fallback to 32bit on 64bit x86 Windows
-            elif platform == "x86_64-mingw32":
-                tool_platform = [p for p in t["systems"] if p["host"] == "i686-mingw32"]
                 if len(tool_platform) == 0:
                     continue
             else:
@@ -452,9 +427,6 @@ def identify_platform():
     arduino_platform_names = {
         "Darwin": {32: "i386-apple-darwin", 64: "x86_64-apple-darwin"},
         "DarwinARM": {32: "arm64-apple-darwin", 64: "arm64-apple-darwin"},
-        "Linux": {32: "i686-pc-linux-gnu", 64: "x86_64-pc-linux-gnu"},
-        "LinuxARM": {32: "arm-linux-gnueabihf", 64: "aarch64-linux-gnu"},
-        "Windows": {32: "i686-mingw32", 64: "x86_64-mingw32"},
     }
     bits = 32
     if sys.maxsize > 2**32:
@@ -463,10 +435,6 @@ def identify_platform():
     sys_platform = platform.platform()
     if "Darwin" in sys_name and (sys_platform.find("arm") > 0 or sys_platform.find("arm64") > 0):
         sys_name = "DarwinARM"
-    if "Linux" in sys_name and (sys_platform.find("arm") > 0 or sys_platform.find("aarch64") > 0):
-        sys_name = "LinuxARM"
-    if "CYGWIN_NT" in sys_name:
-        sys_name = "Windows"
     print("System: %s, Bits: %d, Info: %s" % (sys_name, bits, sys_platform))
     return arduino_platform_names[sys_name][bits]
 

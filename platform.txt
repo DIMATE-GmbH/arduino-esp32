@@ -2,7 +2,6 @@ name=ESP32 Arduino
 version=3.3.7.2
 
 tools.esp32-arduino-libs.path={runtime.tools.{build.chip_variant}-libs.path}
-tools.esp32-arduino-libs.path.windows={runtime.tools.{build.chip_variant}-libs.path}
 tools.xtensa-esp-elf-gcc.path={runtime.tools.esp-x32.path}
 tools.xtensa-esp-elf-gdb.path={runtime.tools.xtensa-esp-elf-gdb.path}
 tools.riscv32-esp-elf-gcc.path={runtime.tools.esp-rv32.path}
@@ -10,25 +9,19 @@ tools.riscv32-esp-elf-gdb.path={runtime.tools.riscv32-esp-elf-gdb.path}
 
 tools.esptool_py.path={runtime.tools.esptool_py.path}
 tools.esptool_py.cmd=esptool
-tools.esptool_py.cmd.windows=esptool.exe
 
 tools.esptool_py.network_cmd=python3 "{runtime.platform.path}/tools/espota.py" -r
-tools.esptool_py.network_cmd.windows="{runtime.platform.path}\tools\espota.exe" -r
 
 tools.esp_ota.cmd=python3 "{runtime.platform.path}/tools/espota.py" -r
-tools.esp_ota.cmd.windows="{runtime.platform.path}\tools\espota.exe" -r
 
 tools.gen_esp32part.cmd=python3 "{runtime.platform.path}/tools/gen_esp32part.py"
-tools.gen_esp32part.cmd.windows="{runtime.platform.path}\tools\gen_esp32part.exe"
 
 tools.gen_insights_pkg.cmd=python3 "{runtime.platform.path}"/tools/gen_insights_package.py
-tools.gen_insights_pkg.cmd.windows="{runtime.platform.path}\tools\gen_insights_package.exe"
 
 compiler.path={tools.{build.tarch}-esp-elf-gcc.path}/bin/
 compiler.prefix={build.tarch}-{build.target}-elf-
 
 compiler.sdk.path={tools.esp32-arduino-libs.path}
-compiler.sdk.path.windows={tools.esp32-arduino-libs.path}
 
 # EXPERIMENTAL feature: optimization flags
 #  - this is alpha and may be subject to change without notice
@@ -108,21 +101,13 @@ recipe.hooks.prebuild.1.pattern=/usr/bin/env bash -c "[ ! -f "{build.source.path
 recipe.hooks.prebuild.2.pattern=/usr/bin/env bash -c "[ -f "{build.path}"/partitions.csv ] || [ ! -f "{build.variant.path}"/{build.custom_partitions}.csv ] || cp "{build.variant.path}"/{build.custom_partitions}.csv "{build.path}"/partitions.csv"
 recipe.hooks.prebuild.3.pattern=/usr/bin/env bash -c "[ -f "{build.path}"/partitions.csv ] || cp "{runtime.platform.path}"/tools/partitions/{build.partitions}.csv "{build.path}"/partitions.csv"
 
-recipe.hooks.prebuild.1.pattern.windows=cmd /c if exist "{build.source.path}\partitions.csv" COPY /y "{build.source.path}\partitions.csv" "{build.path}\partitions.csv"
-recipe.hooks.prebuild.2.pattern.windows=cmd /c if not exist "{build.path}\partitions.csv" if exist "{build.variant.path}\{build.custom_partitions}.csv" COPY "{build.variant.path}\{build.custom_partitions}.csv" "{build.path}\partitions.csv"
-recipe.hooks.prebuild.3.pattern.windows=cmd /c if not exist "{build.path}\partitions.csv" COPY "{runtime.platform.path}\tools\partitions\{build.partitions}.csv" "{build.path}\partitions.csv"
-
 # Check if custom bootloader exist: source > variant > build.boot
 recipe.hooks.prebuild.4.pattern_args=--chip {build.mcu} elf2image --flash-mode {build.flash_mode} --flash-freq {build.img_freq} --flash-size {build.flash_size} -o
 recipe.hooks.prebuild.4.pattern=/usr/bin/env bash -c "[ -f "{build.source.path}"/bootloader.bin ] && cp -f "{build.source.path}"/bootloader.bin "{build.path}"/{build.project_name}.bootloader.bin || ( [ -f "{build.variant.path}"/{build.custom_bootloader}.bin ] && cp "{build.variant.path}"/{build.custom_bootloader}.bin "{build.path}"/{build.project_name}.bootloader.bin || "{tools.esptool_py.path}"/{tools.esptool_py.cmd} {recipe.hooks.prebuild.4.pattern_args} "{build.path}"/{build.project_name}.bootloader.bin "{compiler.sdk.path}"/bin/bootloader_{build.boot}_{build.boot_freq}.elf )"
-recipe.hooks.prebuild.4.pattern.windows=cmd /c IF EXIST "{build.source.path}\bootloader.bin" ( COPY /y "{build.source.path}\bootloader.bin" "{build.path}\{build.project_name}.bootloader.bin" ) ELSE ( IF EXIST "{build.variant.path}\{build.custom_bootloader}.bin" ( COPY "{build.variant.path}\{build.custom_bootloader}.bin" "{build.path}\{build.project_name}.bootloader.bin" ) ELSE ( "{tools.esptool_py.path}\{tools.esptool_py.cmd}" {recipe.hooks.prebuild.4.pattern_args} "{build.path}\{build.project_name}.bootloader.bin" "{compiler.sdk.path}\bin\bootloader_{build.boot}_{build.boot_freq}.elf" ) )
 
 # Check if custom build options exist in the sketch folder
 recipe.hooks.prebuild.5.pattern=/usr/bin/env bash -c "[ ! -f "{build.source.path}"/build_opt.h ] || cp -f "{build.source.path}"/build_opt.h "{build.path}"/build_opt.h"
 recipe.hooks.prebuild.6.pattern=/usr/bin/env bash -c "[ -f "{build.path}"/build_opt.h ] || : > "{build.path}"/build_opt.h"
-
-recipe.hooks.prebuild.5.pattern.windows=cmd /c if exist "{build.source.path}\build_opt.h" COPY /y "{build.source.path}\build_opt.h" "{build.path}\build_opt.h"
-recipe.hooks.prebuild.6.pattern.windows=cmd /c if not exist "{build.path}\build_opt.h" type nul > "{build.path}\build_opt.h"
 
 # Set -DARDUINO_CORE_BUILD only on core file compilation
 file_opts.path={build.path}/file_opts
@@ -130,13 +115,8 @@ recipe.hooks.prebuild.7.pattern=/usr/bin/env bash -c ": > '{file_opts.path}'"
 recipe.hooks.core.prebuild.1.pattern=/usr/bin/env bash -c "echo -DARDUINO_CORE_BUILD > '{file_opts.path}'"
 recipe.hooks.core.postbuild.1.pattern=/usr/bin/env bash -c ": > '{file_opts.path}'"
 
-recipe.hooks.prebuild.7.pattern.windows=cmd /c type nul > "{file_opts.path}"
-recipe.hooks.core.prebuild.1.pattern.windows=cmd /c echo "-DARDUINO_CORE_BUILD" > "{file_opts.path}"
-recipe.hooks.core.postbuild.1.pattern.windows=cmd /c type nul > "{file_opts.path}"
-
 # Copy sdkconfig to build folder
 recipe.hooks.prebuild.8.pattern=/usr/bin/env bash -c "cp -f "{compiler.sdk.path}"/sdkconfig "{build.path}"/sdkconfig"
-recipe.hooks.prebuild.8.pattern.windows=cmd /c COPY /y "{compiler.sdk.path}\sdkconfig" "{build.path}\sdkconfig"
 
 ## Compile c files
 recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.extra_flags} {compiler.c.flags} -DF_CPU={build.f_cpu} -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} -DARDUINO_BOARD="{build.board}" -DARDUINO_VARIANT="{build.variant}" -DARDUINO_PARTITION_{build.partitions} {build.extra_flags} {compiler.cpreprocessor.flags} {includes} "@{build.opt.path}" "@{file_opts.path}" "{source_file}" -o "{object_file}"
@@ -163,11 +143,9 @@ recipe.objcopy.bin.pattern="{tools.esptool_py.path}/{tools.esptool_py.cmd}" {rec
 ## Create Insights Firmware Package
 recipe.hooks.objcopy.postobjcopy.1.pattern_args={build.path} {build.project_name} "{build.source.path}"
 recipe.hooks.objcopy.postobjcopy.1.pattern=/usr/bin/env bash -c "[ ! -d "{build.path}"/libraries/Insights ] || {tools.gen_insights_pkg.cmd} {recipe.hooks.objcopy.postobjcopy.1.pattern_args}"
-recipe.hooks.objcopy.postobjcopy.1.pattern.windows=cmd /c if exist "{build.path}\libraries\Insights" {tools.gen_insights_pkg.cmd} {recipe.hooks.objcopy.postobjcopy.1.pattern_args}
 
 ## Copy ESP_SR Model
 recipe.hooks.objcopy.postobjcopy.2.pattern=/usr/bin/env bash -c "[ ! -d "{build.path}"/libraries/ESP_SR ] || [ ! -f "{compiler.sdk.path}"/esp_sr/srmodels.bin ] || cp -f "{compiler.sdk.path}"/esp_sr/srmodels.bin "{build.path}"/srmodels.bin"
-recipe.hooks.objcopy.postobjcopy.2.pattern.windows=cmd /c if exist "{build.path}\libraries\ESP_SR" if exist "{compiler.sdk.path}\esp_sr\srmodels.bin" COPY /y "{compiler.sdk.path}\esp_sr\srmodels.bin" "{build.path}\srmodels.bin"
 
 # Create merged binary
 recipe.hooks.objcopy.postobjcopy.3.pattern_args=--chip {build.mcu} merge-bin -o "{build.path}/{build.project_name}.merged.bin" --pad-to-size {build.flash_size} --flash-mode keep --flash-freq keep --flash-size keep {build.bootloader_addr} "{build.path}/{build.project_name}.bootloader.bin" 0x8000 "{build.path}/{build.project_name}.partitions.bin" 0xe000 "{runtime.platform.path}/tools/partitions/boot_app0.bin" 0x10000 "{build.path}/{build.project_name}.bin"
@@ -176,7 +154,6 @@ recipe.hooks.objcopy.postobjcopy.3.pattern="{tools.esptool_py.path}/{tools.espto
 # Generate flash_args file
 # Do NOT change the spacing: specifically, do not insert whitespace between a closing quote (') and the following redirection/operator symbols (>, >>, &&). This avoids a bug in older arduino-builder versions shipped with IDE 1.x, which occurs if a quote (') character is directly followed by a whitespace.
 recipe.hooks.objcopy.postobjcopy.4.pattern=/usr/bin/env bash -c "echo '--flash-mode {build.flash_mode} --flash-freq {build.img_freq} --flash-size {build.flash_size}'>'{build.path}/flash_args'&& echo '{build.bootloader_addr} {build.project_name}.bootloader.bin'>> '{build.path}/flash_args'&& echo '0x8000 {build.project_name}.partitions.bin'>> '{build.path}/flash_args'&& echo '0xe000 boot_app0.bin'>> '{build.path}/flash_args'&& echo '0x10000 {build.project_name}.bin'>> '{build.path}/flash_args'"
-recipe.hooks.objcopy.postobjcopy.4.pattern.windows=cmd /c echo --flash-mode {build.flash_mode} --flash-freq {build.img_freq} --flash-size {build.flash_size} > "{build.path}\flash_args" && echo {build.bootloader_addr} {build.project_name}.bootloader.bin >> "{build.path}\flash_args" && echo 0x8000 {build.project_name}.partitions.bin >> "{build.path}\flash_args" && echo 0xe000 boot_app0.bin >> "{build.path}\flash_args" && echo 0x10000 {build.project_name}.bin >> "{build.path}\flash_args"
 
 ## Save bin
 recipe.output.tmp_file={build.project_name}.bin
@@ -195,32 +172,25 @@ recipe.size.regex.data=^(?:\.dram0\.data|\.dram0\.bss|\.dram1\.data|\.dram1\.bss
 ## Define FQBN transformation logic as reusable properties
 ## Converts FQBN to vendor.arch.board format matching Arduino IDE default export path
 recipe.hooks.savehex.fqbn_to_dir=FQBN_DIR=$(echo '{build.fqbn}' | cut -d: -f1-3 | tr ':' '.') && mkdir -p '{sketch_path}/build/'$FQBN_DIR
-recipe.hooks.savehex.fqbn_to_dir.windows=$env:FQBN_DIR=('{build.fqbn}' -split ':')[0..2] -join '.'; $dest='{sketch_path}\build\' + $env:FQBN_DIR; New-Item -ItemType Directory -Force -Path $dest | Out-Null
 
 ## Export all files starting with sketch name (*.bin, *.elf, *.map, etc.)
 ## IDE v1 does not do this automatically like IDE v2
 recipe.hooks.savehex.postsavehex.0.pattern=/usr/bin/env bash -c "{recipe.hooks.savehex.fqbn_to_dir} && cp -f '{build.path}/{build.project_name}.'* '{sketch_path}/build/'$FQBN_DIR'/' 2>/dev/null || true"
-recipe.hooks.savehex.postsavehex.0.pattern.windows=powershell -Command "{recipe.hooks.savehex.fqbn_to_dir}; Copy-Item -Force -ErrorAction SilentlyContinue -Path '{build.path}\{build.project_name}.*' -Destination $dest"
 
 ## Export partitions.csv (for reference)
 recipe.hooks.savehex.postsavehex.1.pattern=/usr/bin/env bash -c "{recipe.hooks.savehex.fqbn_to_dir} && cp -f '{build.path}/partitions.csv' '{sketch_path}/build/'$FQBN_DIR'/partitions.csv' 2>/dev/null || true"
-recipe.hooks.savehex.postsavehex.1.pattern.windows=powershell -Command "{recipe.hooks.savehex.fqbn_to_dir}; Copy-Item -Force -ErrorAction SilentlyContinue '{build.path}\partitions.csv' ($dest + '\partitions.csv')"
 
 ## Export sdkconfig (for reference)
 recipe.hooks.savehex.postsavehex.2.pattern=/usr/bin/env bash -c "{recipe.hooks.savehex.fqbn_to_dir} && cp -f '{build.path}/sdkconfig' '{sketch_path}/build/'$FQBN_DIR'/sdkconfig' 2>/dev/null || true"
-recipe.hooks.savehex.postsavehex.2.pattern.windows=powershell -Command "{recipe.hooks.savehex.fqbn_to_dir}; Copy-Item -Force -ErrorAction SilentlyContinue '{build.path}\sdkconfig' ($dest + '\sdkconfig')"
 
 ## Export flash_args
 recipe.hooks.savehex.postsavehex.3.pattern=/usr/bin/env bash -c "{recipe.hooks.savehex.fqbn_to_dir} && cp -f '{build.path}/flash_args' '{sketch_path}/build/'$FQBN_DIR'/flash_args' 2>/dev/null || true"
-recipe.hooks.savehex.postsavehex.3.pattern.windows=powershell -Command "{recipe.hooks.savehex.fqbn_to_dir}; Copy-Item -Force -ErrorAction SilentlyContinue '{build.path}\flash_args' ($dest + '\flash_args')"
 
 ## Export boot_app0.bin
 recipe.hooks.savehex.postsavehex.4.pattern=/usr/bin/env bash -c "{recipe.hooks.savehex.fqbn_to_dir} && cp -f '{runtime.platform.path}/tools/partitions/boot_app0.bin' '{sketch_path}/build/'$FQBN_DIR'/boot_app0.bin' 2>/dev/null || true"
-recipe.hooks.savehex.postsavehex.4.pattern.windows=powershell -Command "{recipe.hooks.savehex.fqbn_to_dir}; Copy-Item -Force -ErrorAction SilentlyContinue '{runtime.platform.path}\tools\partitions\boot_app0.bin' ($dest + '\boot_app0.bin')"
 
 ## Export build.options.json
 recipe.hooks.savehex.postsavehex.5.pattern=/usr/bin/env bash -c "{recipe.hooks.savehex.fqbn_to_dir} && cp -f '{build.path}/build.options.json' '{sketch_path}/build/'$FQBN_DIR'/build.options.json' 2>/dev/null || true"
-recipe.hooks.savehex.postsavehex.5.pattern.windows=powershell -Command "{recipe.hooks.savehex.fqbn_to_dir}; Copy-Item -Force -ErrorAction SilentlyContinue '{build.path}\build.options.json' ($dest + '\build.options.json')"
 
 ## Required discoveries and monitors
 ## ---------------------------------
@@ -256,7 +226,6 @@ debug.toolchain.prefix={build.tarch}-{build.target}-elf
 debug.server=openocd
 debug.server.openocd.path={runtime.tools.openocd-esp32.path}/bin/openocd
 debug.server.openocd.scripts_dir={runtime.tools.openocd-esp32.path}/share/openocd/scripts/
-debug.server.openocd.scripts_dir.windows={runtime.tools.openocd-esp32.path}\share\openocd\scripts\
 debug.server.openocd.scripts.0=board/{debug_script.{build.mcu}}
 debug.svd_file={runtime.platform.path}/tools/ide-debug/svd/{build.mcu}.svd
 
@@ -325,7 +294,6 @@ tools.dfu-util.upload.pattern="{path}/{cmd}" --device {vid.0}:{pid.0} -D "{build
 ## --------------------------------------------------------------------------
 tools.esptool_py_app_only.path={runtime.tools.esptool_py.path}
 tools.esptool_py_app_only.cmd=esptool
-tools.esptool_py_app_only.cmd.windows=esptool.exe
 
 tools.esptool_py_app_only.upload.protocol=serial
 tools.esptool_py_app_only.upload.params.verbose=

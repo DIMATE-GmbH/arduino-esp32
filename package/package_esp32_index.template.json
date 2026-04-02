@@ -29,11 +29,6 @@
           "toolsDependencies": [
             {
               "packager": "esp32",
-              "name": "esp32-arduino-libs",
-              "version": "v5.5.4-v3.3.7.2"
-            },
-            {
-              "packager": "esp32",
               "name": "xtensa-esp-elf-gcc",
               "version": "esp-14.2.0_20251107"
             },
@@ -66,26 +61,6 @@
         }
       ],
       "tools": [
-        {
-          "name": "esp32-arduino-libs",
-          "version": "v5.5.4-v3.3.7.2",
-          "systems": [
-            {
-              "host": "arm64-apple-darwin",
-              "url": "https://github.com/DIMATE-GmbH/esp32-arduino-lib-builder/releases/download/v5.5.4-v3.3.7.2/esp32-libs-v5.5.4-v3.3.7.2.zip",
-              "archiveFileName": "esp32-libs-v5.5.4-v3.3.7.2.zip",
-              "checksum": "SHA-256:4a9793ae70991ce5cf8d1eda260ccf9c37e7ab9fd7d165ed3eaae548eef28d7d",
-              "size": "52795757"
-            },
-            {
-              "host": "x86_64-apple-darwin",
-              "url": "https://github.com/DIMATE-GmbH/esp32-arduino-lib-builder/releases/download/v5.5.4-v3.3.7.2/esp32-libs-v5.5.4-v3.3.7.2.zip",
-              "archiveFileName": "esp32-libs-v5.5.4-v3.3.7.2.zip",
-              "checksum": "SHA-256:4a9793ae70991ce5cf8d1eda260ccf9c37e7ab9fd7d165ed3eaae548eef28d7d",
-              "size": "52795757"
-            }
-          ]
-        },
         {
           "name": "xtensa-esp-elf-gcc",
           "version": "esp-14.2.0_20251107",
