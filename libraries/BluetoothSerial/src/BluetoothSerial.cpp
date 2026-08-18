@@ -396,9 +396,17 @@ static bool _init_bt(const char *deviceName) {
     return false;
   }
 
-  // x) We set the device name but no cod (using "esp_bt_gap_set_cod(...)" since
-  //    none of the categories match our use case.
+  // x) We set the device name.
   esp_bt_gap_set_device_name(deviceName);
+
+  // xi) We have to set cod as the default mode does not work with the macOS BT stack!
+  esp_bt_cod_t cod;
+  cod.major = 0b00001; // Major Device Class: Computer
+  cod.minor = 0b000100; // Minor Device Class: Laptop
+  cod.service = 0b00000010110; // Service Class: Rendering, Capturing, Object Transfer
+  if (esp_bt_gap_set_cod(cod, ESP_BT_INIT_COD) != ESP_OK) {
+    return false;
+  }
 
   return true;
 }
