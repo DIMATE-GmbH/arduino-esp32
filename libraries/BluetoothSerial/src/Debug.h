@@ -20,9 +20,9 @@
  *  effect when building the "Release" configuration!
  */
 #ifdef DEBUG_ENABLED
-#define DEBUG_SERIAL(x) Serial.println(x);
+#define DEBUG_SERIAL(...) Serial.printf(__VA_ARGS__);
 #else
-#define DEBUG_SERIAL(x)
+#define DEBUG_SERIAL(...)
 #endif
 
 #endif

@@ -28,9 +28,7 @@
 
 #include "BluetoothSerial.h"
 
-#ifdef DEBUG_ENABLED
 #include "Debug.h"
-#endif
 
 // This is also added to the device file name when connected to by machines
 // running macOS / Linux. Since this is the server name and not the device name,
@@ -91,9 +89,7 @@ static esp_err_t _spp_queue_packet(const uint8_t *data, size_t len) {
   // ii) Copy the actual data into the buffer.
   auto packet = (spp_packet_t*) malloc(sizeof(spp_packet_t) + len);
   if (!packet) {
-#ifdef DEBUG_ENABLED
-    DEBUG_SERIAL("DEBUG BluetoothSerial::_spp_queue_packet malloc failed")
-#endif
+    DEBUG_SERIAL("DEBUG BluetoothSerial::_spp_queue_packet malloc failed\n")
     return ESP_FAIL;
   }
   packet->len = len;
@@ -102,9 +98,7 @@ static esp_err_t _spp_queue_packet(const uint8_t *data, size_t len) {
   // iii) Write the actual data, everything is handled via the underlying
   //      implementation.
   if (!_spp_tx_queue || xQueueSend(_spp_tx_queue, &packet, 1000) != pdPASS) {
-#ifdef DEBUG_ENABLED
-    DEBUG_SERIAL("DEBUG BluetoothSerial::_spp_queue_packet queue send failed")
-#endif
+    DEBUG_SERIAL("DEBUG BluetoothSerial::_spp_queue_packet queue send failed\n")
     free(packet);
     return ESP_FAIL;
   }
@@ -130,9 +124,7 @@ static bool _spp_send_buffer() {
   // i) Wait until for the buffer to not be "overloaded" anymore
   if ((xEventGroupWaitBits(_spp_event_group, NOT_OVERLOADED, pdFALSE, pdTRUE,
       1000) & NOT_OVERLOADED) == 0) {
-#ifdef DEBUG_ENABLED
-    DEBUG_SERIAL("DEBUG BluetoothSerial::_spp_send_buffer overloaded")
-#endif
+    DEBUG_SERIAL("DEBUG BluetoothSerial::_spp_send_buffer overloaded\n")
     return false;
   }
 
@@ -141,18 +133,14 @@ static bool _spp_send_buffer() {
   esp_err_t err = esp_spp_write(_spp_client, _spp_tx_buffer_len,
       _spp_tx_buffer);
   if (err != ESP_OK) {
-#ifdef DEBUG_ENABLED
-    DEBUG_SERIAL("DEBUG BluetoothSerial::_spp_send_buffer write failed")
-#endif
+    DEBUG_SERIAL("DEBUG BluetoothSerial::_spp_send_buffer write failed\n")
     return false;
   }
 
   // iii) Unblock the semaphore to not block future communication anymore
   _spp_tx_buffer_len = 0;
   if (xSemaphoreTake(_spp_tx_done, 1000) != pdTRUE) {
-#ifdef DEBUG_ENABLED
-    DEBUG_SERIAL("DEBUG BluetoothSerial::_spp_send_buffer ACK failed")
-#endif
+    DEBUG_SERIAL("DEBUG BluetoothSerial::_spp_send_buffer ACK failed\n")
     return false;
   }
   return true;
@@ -233,6 +221,30 @@ static void _spp_tx_task(void *arg) {
 }
 
 /**
+ *  This is the callback method invoked for every Bluetooth GAP event. It covers
+ *  only the PIN request event as this might be called from the macOS Bluetooth
+ *  stack when connecting to the ESP32 Bluetooth Classic interface. The PIN is
+ *  hardcoded to "1234" as this is a legacy pairing method in contrary to SPP.
+ *  Otherwise, macOS would hang in the authentication timeout.
+ */
+static void esp_bt_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param) {
+  switch (event) {
+  case ESP_BT_GAP_PIN_REQ_EVT:
+    DEBUG_SERIAL("DEBUG BluetoothSerial::esp_bt_gap_cb received ESP_BT_GAP_PIN_REQ_EVT\n")
+    if (!param->pin_req.min_16_digit) {
+      esp_bt_pin_code_t pin_code = {'1', '2', '3', '4'};
+      esp_bt_gap_pin_reply(param->pin_req.bda, true, 4, pin_code);
+    } else {
+      esp_bt_gap_pin_reply(param->pin_req.bda, false, 0, nullptr);
+    }
+    break;
+
+  default:
+    break;
+  }
+}
+
+/**
  *  This is the callback method invoked for every Serial Port Profile (SPP). It
  *  covers only the necessary events used for our use cases, being a slave
  *  device.
@@ -248,6 +260,10 @@ static void esp_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) { //
 
   case ESP_SPP_SRV_OPEN_EVT:
     // A connection towards the ESP32 Bluetooth Classic interface is opened.
+    DEBUG_SERIAL("DEBUG BluetoothSerial::esp_spp_cb received ESP_SPP_SRV_OPEN_EVT\n")
+    DEBUG_SERIAL("ESP_SPP_SRV_OPEN_EVT: status=%d handle=%lu current_client=%lu\n",
+      param->srv_open.status, (unsigned long)param->srv_open.handle,
+      (unsigned long)_spp_client);
     if (param->srv_open.status == ESP_SPP_SUCCESS) {
       if (!_spp_client) {
         _spp_client = param->srv_open.handle;
@@ -262,6 +278,10 @@ static void esp_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) { //
   case ESP_SPP_CLOSE_EVT:
     // A connection towards (or from, not happening in our case) the ESP32
     // Bluetooth Classic interface is closed.
+    DEBUG_SERIAL("DEBUG BluetoothSerial::esp_spp_cb received ESP_SPP_CLOSE_EVT\n")
+    DEBUG_SERIAL("ESP_SPP_CLOSE_EVT: status=%d handle=%lu async=%d second_attempt=%d\n",
+      param->close.status, (unsigned long)param->close.handle,
+      param->close.async, secondConnectionAttempt);
     if ((param->close.async == false && param->close.status == ESP_SPP_SUCCESS)
         || param->close.async) {
       if (secondConnectionAttempt) {
@@ -276,6 +296,7 @@ static void esp_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) { //
   case ESP_SPP_DATA_IND_EVT:
     // Another device is sending data towards the ESP32 Bluetooth Classic
     // interface, this event is triggered when the data is received on this side.
+    DEBUG_SERIAL("DEBUG BluetoothSerial::esp_spp_cb received ESP_SPP_DATA_IND_EVT\n")
     if (_spp_rx_queue != nullptr) {
       for (int i = 0; i < param->data_ind.len; i++) {
         if (xQueueSend(_spp_rx_queue, param->data_ind.data + i,
@@ -289,6 +310,7 @@ static void esp_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) { //
   case ESP_SPP_WRITE_EVT:
     // Another device received data from the ESP32 Bluetooth Classic interface,
     // this event is triggered when the data was completely written.
+    DEBUG_SERIAL("DEBUG BluetoothSerial::esp_spp_cb received ESP_SPP_WRITE_EVT\n")
     if (param->write.status == ESP_SPP_SUCCESS && param->write.cong) {
       // Writing was successful, the buffer is meant not to be overloaded
       // anymore (congested).
@@ -301,6 +323,7 @@ static void esp_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) { //
     // The "overload" information is changed based on the back and forth of the
     // data sent and received. Based on that, either clear or save that
     // information.
+    DEBUG_SERIAL("DEBUG BluetoothSerial::esp_spp_cb received ESP_SPP_CONG_EVT\n")
     if (param->cong.cong) {
       xEventGroupClearBits(_spp_event_group, NOT_OVERLOADED);
     } else {
@@ -384,8 +407,13 @@ static bool _init_bt(const char *deviceName) {
     return false;
   }
 
-  // viii) Register the callback for the Serial Port Profile (SPP) events.
+  // viii) Register the callbacks for the Serial Port Profile (SPP) events and
+  //       the legacy Bluetooth GAP PIN event.
   if (esp_spp_register_callback(esp_spp_cb) != ESP_OK) {
+    return false;
+  }
+
+  if (esp_bt_gap_register_callback(esp_bt_gap_cb) != ESP_OK) {
     return false;
   }
 
