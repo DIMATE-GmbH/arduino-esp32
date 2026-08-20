@@ -222,10 +222,18 @@ static void _spp_tx_task(void *arg) {
 
 /**
  *  This is the callback method invoked for every Bluetooth GAP event. It covers
- *  only the PIN request event as this might be called from the macOS Bluetooth
+ *  the PIN request event as this might be called from the macOS Bluetooth
  *  stack when connecting to the ESP32 Bluetooth Classic interface. The PIN is
  *  hardcoded to "1234" as this is a legacy pairing method in contrary to SPP.
  *  Otherwise, macOS would hang in the authentication timeout.
+ *
+ *  Also covers the Secure Simple Pairing (SSP) user confirmation request. With
+ *  no explicit IO capability configured, both sides negotiate "Just Works"
+ *  (no display/input on this device either way), so we always auto-accept
+ *  rather than requiring an app-level callback there is no UI to service
+ *  anyway. Without this handler the request silently falls through to
+ *  `default: break;` and macOS/the peer times out waiting for a reply instead
+ *  of completing pairing.
  */
 static void esp_bt_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param) {
   switch (event) {
@@ -237,6 +245,11 @@ static void esp_bt_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *pa
     } else {
       esp_bt_gap_pin_reply(param->pin_req.bda, false, 0, nullptr);
     }
+    break;
+
+  case ESP_BT_GAP_CFM_REQ_EVT:
+    DEBUG_SERIAL("DEBUG BluetoothSerial::esp_bt_gap_cb received ESP_BT_GAP_CFM_REQ_EVT\n")
+    esp_bt_gap_ssp_confirm_reply(param->cfm_req.bda, true);
     break;
 
   default:
@@ -254,8 +267,15 @@ static void esp_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) { //
   case ESP_SPP_INIT_EVT:
     // The Serial Port Profile (SPP) is initialized, time to set up the
     // Bluetooth server.
+    //
+    // ESP_SPP_SEC_NONE previously meant this service never required (or
+    // stored) a real pairing, so every connecting client re-did SSP from
+    // scratch each time with nothing persisted on either side - on macOS
+    // this surfaces as a "Connection Request" consent popup on *every*
+    // single connect, not just the first. ESP_SPP_SEC_AUTHENTICATE makes
+    // the bond actually persist once pairing succeeds.
     esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
-    esp_spp_start_srv(ESP_SPP_SEC_NONE, ESP_SPP_ROLE_SLAVE, 0, SERVER_NAME);
+    esp_spp_start_srv(ESP_SPP_SEC_AUTHENTICATE, ESP_SPP_ROLE_SLAVE, 0, SERVER_NAME);
     break;
 
   case ESP_SPP_SRV_OPEN_EVT:
