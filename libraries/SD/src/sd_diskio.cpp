@@ -149,7 +149,7 @@ char sdCommand(uint8_t pdrv, char cmd, unsigned int arg, unsigned int *resp) {
       }
     }
 
-    char cmdPacket[7];
+    char cmdPacket[6];
     cmdPacket[0] = cmd | 0x40;
     cmdPacket[1] = arg >> 24;
     cmdPacket[2] = arg >> 16;
@@ -160,9 +160,19 @@ char sdCommand(uint8_t pdrv, char cmd, unsigned int arg, unsigned int *resp) {
     } else {
       cmdPacket[5] = 0x01;
     }
-    cmdPacket[6] = 0xFF;
 
-    card->spi->writeBytes((uint8_t *)cmdPacket, (cmd == STOP_TRANSMISSION) ? 7 : 6);
+    card->spi->writeBytes((uint8_t *)cmdPacket, 6);
+
+    // Per the SD Physical Layer spec, STOP_TRANSMISSION's R1 response is
+    // preceded by exactly one stuff byte - the card may still be finishing
+    // the data stream it's being told to abort. Without discarding it
+    // first, the token-search loop below can mistake that stuff byte
+    // itself for the response (it reliably has bit 7 clear, so the loop
+    // accepts it immediately), misreading a perfectly successful multi-
+    // block read as an "illegal command" failure on every single call.
+    if (cmd == STOP_TRANSMISSION) {
+      card->spi->transfer(0xFF);
+    }
 
     for (int i = 0; i < 9; i++) {
       token = card->spi->transfer(0xFF);
