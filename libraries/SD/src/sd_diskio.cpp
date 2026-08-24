@@ -268,6 +268,12 @@ bool sdReadSector(uint8_t pdrv, char *buffer, unsigned long long sector) {
 }
 
 bool sdReadSectors(uint8_t pdrv, char *buffer, unsigned long long sector, int count) {
+  // Kept only for the diagnostic logging below - "sector"/"count" themselves
+  // are mutated as the read progresses, so without these we'd have no way
+  // to report how far a failing multi-sector read actually got.
+  const unsigned long long startSector = sector;
+  const int requestedCount = count;
+
   for (int f = 0; f < 3;) {
     if (!sdSelectCard(pdrv)) {
       return false;
@@ -276,6 +282,10 @@ bool sdReadSectors(uint8_t pdrv, char *buffer, unsigned long long sector, int co
     if (!sdCommand(pdrv, READ_BLOCK_MULTIPLE, (s_cards[pdrv]->type == CARD_SDHC) ? sector : sector << 9, NULL)) {
       do {
         if (!sdReadBytes(pdrv, buffer, 512)) {
+          log_e(
+            "sdReadSectors(): sdReadBytes failed at sector %llu (%d of %d blocks read, starting at sector %llu)", sector,
+            requestedCount - count, requestedCount, startSector
+          );
           f++;
           break;
         }
@@ -285,8 +295,13 @@ bool sdReadSectors(uint8_t pdrv, char *buffer, unsigned long long sector, int co
         f = 0;
       } while (--count);
 
-      if (sdCommand(pdrv, STOP_TRANSMISSION, 0, NULL)) {
-        log_e("command failed");
+      char stopToken = sdCommand(pdrv, STOP_TRANSMISSION, 0, NULL);
+      if (stopToken) {
+        log_e(
+          "sdReadSectors(): STOP_TRANSMISSION failed with token 0x%02x (start sector %llu, %d blocks requested, %d "
+          "remaining)",
+          (unsigned char) stopToken, startSector, requestedCount, count
+        );
         break;
       }
 
