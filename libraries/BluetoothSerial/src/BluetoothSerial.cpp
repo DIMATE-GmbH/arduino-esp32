@@ -298,18 +298,27 @@ static void esp_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) { //
   case ESP_SPP_CLOSE_EVT:
     // A connection towards (or from, not happening in our case) the ESP32
     // Bluetooth Classic interface is closed.
+    //
+    // This used to only reset "_spp_client" when the close was either async
+    // or a synchronous success ("(async == false && status == SUCCESS) ||
+    // async"). A synchronous close reported with a non-success status still
+    // means the port is gone - Bluedroid doesn't fire this event otherwise -
+    // but fell through that check and left "_spp_client" stuck on the old,
+    // now-invalid handle. Every future connection then hit the "else" branch
+    // below as if it were a colliding second client and got disconnected
+    // immediately, with no way to recover short of a reboot. Unconditionally
+    // processing the close (regardless of "status") fixes this; the intent
+    // captured by "secondConnectionAttempt" - not touching "_spp_client" for
+    // a connection we ourselves rejected - is unaffected.
     DEBUG_SERIAL("DEBUG BluetoothSerial::esp_spp_cb received ESP_SPP_CLOSE_EVT\n")
     DEBUG_SERIAL("ESP_SPP_CLOSE_EVT: status=%d handle=%lu async=%d second_attempt=%d\n",
       param->close.status, (unsigned long)param->close.handle,
       param->close.async, secondConnectionAttempt);
-    if ((param->close.async == false && param->close.status == ESP_SPP_SUCCESS)
-        || param->close.async) {
-      if (secondConnectionAttempt) {
-        secondConnectionAttempt = false;
-      } else {
-        _spp_client = 0;
-        xEventGroupSetBits(_spp_event_group, NOT_OVERLOADED);
-      }
+    if (secondConnectionAttempt) {
+      secondConnectionAttempt = false;
+    } else {
+      _spp_client = 0;
+      xEventGroupSetBits(_spp_event_group, NOT_OVERLOADED);
     }
     break;
 
