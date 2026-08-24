@@ -324,8 +324,11 @@ static void esp_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) { //
 
   case ESP_SPP_DATA_IND_EVT:
     // Another device is sending data towards the ESP32 Bluetooth Classic
-    // interface, this event is triggered when the data is received on this side.
-    DEBUG_SERIAL("DEBUG BluetoothSerial::esp_spp_cb received ESP_SPP_DATA_IND_EVT\n")
+    // interface, this event is triggered when the data is received on this
+    // side. Not logged: fires once per incoming command already reported by
+    // "ESP32BT::loop"'s own "Received command: ..." message, and floods the
+    // serial log heavily enough during a multi-page file transfer to risk
+    // truncating whatever's capturing it.
     if (_spp_rx_queue != nullptr) {
       for (int i = 0; i < param->data_ind.len; i++) {
         if (xQueueSend(_spp_rx_queue, param->data_ind.data + i,
@@ -338,8 +341,10 @@ static void esp_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) { //
 
   case ESP_SPP_WRITE_EVT:
     // Another device received data from the ESP32 Bluetooth Classic interface,
-    // this event is triggered when the data was completely written.
-    DEBUG_SERIAL("DEBUG BluetoothSerial::esp_spp_cb received ESP_SPP_WRITE_EVT\n")
+    // this event is triggered when the data was completely written. Not
+    // logged: fires once per ~330-byte chunk, so a single multi-KB page
+    // response already produces a dozen-plus of these - by far the biggest
+    // flood source in the serial log during a real file transfer.
     if (param->write.status == ESP_SPP_SUCCESS && param->write.cong) {
       // Writing was successful, the buffer is meant not to be overloaded
       // anymore (congested).
@@ -351,8 +356,8 @@ static void esp_spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) { //
   case ESP_SPP_CONG_EVT:
     // The "overload" information is changed based on the back and forth of the
     // data sent and received. Based on that, either clear or save that
-    // information.
-    DEBUG_SERIAL("DEBUG BluetoothSerial::esp_spp_cb received ESP_SPP_CONG_EVT\n")
+    // information. Not logged: can toggle frequently under sustained
+    // transfer load, another flood source.
     if (param->cong.cong) {
       xEventGroupClearBits(_spp_event_group, NOT_OVERLOADED);
     } else {
