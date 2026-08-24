@@ -163,21 +163,38 @@ char sdCommand(uint8_t pdrv, char cmd, unsigned int arg, unsigned int *resp) {
 
     card->spi->writeBytes((uint8_t *)cmdPacket, 6);
 
-    // Per the SD Physical Layer spec, STOP_TRANSMISSION's R1 response is
-    // preceded by exactly one stuff byte - the card may still be finishing
-    // the data stream it's being told to abort. Without discarding it
-    // first, the token-search loop below can mistake that stuff byte
-    // itself for the response (it reliably has bit 7 clear, so the loop
-    // accepts it immediately), misreading a perfectly successful multi-
-    // block read as an "illegal command" failure on every single call.
     if (cmd == STOP_TRANSMISSION) {
-      card->spi->transfer(0xFF);
-    }
+      // Discarding a single assumed "stuff byte" before searching for the
+      // token (as the SD Physical Layer spec suggests) made no observed
+      // difference - still the exact same 0x04 response on every call, on
+      // every file. Capturing and logging the raw byte sequence here
+      // instead of guessing further, to see the actual pattern.
+      char rawBytes[16];
+      for (int i = 0; i < 16; i++) {
+        rawBytes[i] = card->spi->transfer(0xFF);
+      }
+      log_e(
+        "sdCommand(): STOP_TRANSMISSION raw response bytes: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x "
+        "%02x %02x %02x %02x %02x",
+        (unsigned char) rawBytes[0], (unsigned char) rawBytes[1], (unsigned char) rawBytes[2], (unsigned char) rawBytes[3],
+        (unsigned char) rawBytes[4], (unsigned char) rawBytes[5], (unsigned char) rawBytes[6], (unsigned char) rawBytes[7],
+        (unsigned char) rawBytes[8], (unsigned char) rawBytes[9], (unsigned char) rawBytes[10], (unsigned char) rawBytes[11],
+        (unsigned char) rawBytes[12], (unsigned char) rawBytes[13], (unsigned char) rawBytes[14], (unsigned char) rawBytes[15]
+      );
 
-    for (int i = 0; i < 9; i++) {
-      token = card->spi->transfer(0xFF);
-      if (!(token & 0x80)) {
-        break;
+      token = 0xFF;
+      for (int i = 0; i < 16; i++) {
+        if (!(rawBytes[i] & 0x80)) {
+          token = rawBytes[i];
+          break;
+        }
+      }
+    } else {
+      for (int i = 0; i < 9; i++) {
+        token = card->spi->transfer(0xFF);
+        if (!(token & 0x80)) {
+          break;
+        }
       }
     }
 
