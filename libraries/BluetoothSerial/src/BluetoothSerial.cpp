@@ -381,11 +381,28 @@ static bool _init_bt(const char *deviceName) {
     xEventGroupSetBits(_spp_event_group, NOT_OVERLOADED);
   }
 
-  // ii) Create the receive queue for incoming data, by default this is 512
-  //     Bytes in size, this is done via the underlying FreeRTOS implementation.
-  //     512 means the queue has space for this many elements.
+  // ii) Create the receive queue for incoming data, sized in Bytes, via the
+  //     underlying FreeRTOS implementation (each element holds one Byte).
+  //
+  //     ESP_SPP_DATA_IND_EVT (below) pushes onto this queue with a 0-tick
+  //     (non-blocking) xQueueSend, silently DROPPING the rest of an
+  //     in-flight message the instant the queue is full - `loop()` only
+  //     drains it (via readBytesUntil) on its next iteration, by which
+  //     point any dropped bytes are gone for good, not just delayed. The
+  //     original 512-Byte size was fine for every reply this device sends
+  //     (chunked into <=330-Byte SPP_TX_MAX pieces on the way out) but is
+  //     far too small for the one case with a large INCOMING single line:
+  //     the firmware's own "w" (write file) request, up to ~4.1 KB
+  //     (MAX_MESSAGE_SIZE in the firmware's MemoryManagement.h) - observed
+  //     truncating every "w" page request to whatever fit in the queue at
+  //     that moment, with no error and no correlation to timeout length
+  //     (confirmed: raising the Stream read timeout 5x had zero effect,
+  //     since the data was already gone from the queue, not merely
+  //     delayed). Sized here with real headroom above that 4.1 KB
+  //     ceiling rather than tuned to the exact byte count, so it isn't
+  //     revisited every time that protocol constant changes.
   if (_spp_rx_queue == nullptr) {
-    _spp_rx_queue = xQueueCreate(512, sizeof(uint8_t));
+    _spp_rx_queue = xQueueCreate(8192, sizeof(uint8_t));
     if (_spp_rx_queue == nullptr) {
       return false;
     }
